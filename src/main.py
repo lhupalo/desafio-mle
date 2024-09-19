@@ -1,35 +1,41 @@
 from fastapi import FastAPI
-from database import InMemoryDatabase
+from schemas.flightinfo import FlightInfo
+from src.models.database import InMemoryDatabase
+import joblib
+import pandas as pd
 
 import uvicorn
 
 
 app = FastAPI()
 
+model = joblib.load("./notebook/modelo.pkl")
+
 
 @app.get("/health", status_code=200, tags=["health"], summary="Health check")
 async def health():
     return {"status": "ok"}
 
-@app.post("/model/", tags=["example"], summary="Insert user")
-async def insert(data: dict):
-    db = InMemoryDatabase()
-    users = db.get_collection('users')
-    users.insert_one(data)
-    return {"status": "ok"}
 
-@app.get("/model/{name}", status_code=200, tags=["example"], summary="Get user by name")
-async def get(name: str):
-    db = InMemoryDatabase()
-    users = db.get_collection('users')
-    user = users.find_one({"name": name})
-    return {"status": "ok", "user": user}
+@app.post("/model/predict/")
+async def predict_flight_delay(flight_info: FlightInfo):
+    # Transformar os dados de entrada no formato que o modelo espera
+    input_data = {
+        "dep_time": [flight_info.dep_time],
+        "dep_delay": [flight_info.dep_delay],
+        "origin": [flight_info.origin],
+        "dest": [flight_info.dest],
+        "carrier": [flight_info.carrier],
+        "distance": [flight_info.distance],
+        "month": [flight_info.month],
+    }
 
-@app.get("/model/", tags=["example"], summary="List all users")
-async def list():
-    db = InMemoryDatabase()
-    users = db.get_collection('users')
-    return {"status": "ok", "users": [x for x in users.find({},{"_id": 0})]}
+    input_df = pd.DataFrame(input_data)
+
+    # Fazer a previsão
+    prediction = model.predict(input_df)
+    print(prediction)
+    return {"predicted_arrival_delay": prediction[0]}
 
 
 if __name__ == "__main__":
