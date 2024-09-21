@@ -4,3 +4,5 @@
 htmlcov/
 .coverage
 .flake8
+
+notebook/ml-env

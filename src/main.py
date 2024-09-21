@@ -1,42 +1,19 @@
 from fastapi import FastAPI
-from schemas.flightinfo import FlightInfo
-from src.models.database import InMemoryDatabase
-import joblib
-import pandas as pd
-
 import uvicorn
+from src.routes.model_routes import router as model_router
+from src.routes.health_routes import router as health_router
 
+from src.models.model_database import ModelInMemoryDatabase
+from src.models.prediction_database import PredictionInMemoryDatabase
 
 app = FastAPI()
 
-model = joblib.load("./notebook/modelo.pkl")
+# Incluir as rotas dos arquivos separados
+app.include_router(model_router)
+app.include_router(health_router)
 
-
-@app.get("/health", status_code=200, tags=["health"], summary="Health check")
-async def health():
-    return {"status": "ok"}
-
-
-@app.post("/model/predict/")
-async def predict_flight_delay(flight_info: FlightInfo):
-    # Transformar os dados de entrada no formato que o modelo espera
-    input_data = {
-        "dep_time": [flight_info.dep_time],
-        "dep_delay": [flight_info.dep_delay],
-        "origin": [flight_info.origin],
-        "dest": [flight_info.dest],
-        "carrier": [flight_info.carrier],
-        "distance": [flight_info.distance],
-        "month": [flight_info.month],
-    }
-
-    input_df = pd.DataFrame(input_data)
-
-    # Fazer a previsão
-    prediction = model.predict(input_df)
-    print(prediction)
-    return {"predicted_arrival_delay": prediction[0]}
-
+model_db = ModelInMemoryDatabase()
+prediction_db = PredictionInMemoryDatabase()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
