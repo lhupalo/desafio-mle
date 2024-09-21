@@ -1,0 +1,8 @@
+.pytest_cache/
+.vscode/
+
+htmlcov/
+.coverage
+.flake8
+
+notebook/ml-env
