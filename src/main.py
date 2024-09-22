@@ -6,7 +6,23 @@ from src.routes.health_routes import router as health_router
 from src.models.model_database import ModelInMemoryDatabase
 from src.models.prediction_database import PredictionInMemoryDatabase
 
+from fastapi.middleware.cors import CORSMiddleware
+
+# Configurações de CORS
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+]
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Incluir as rotas dos arquivos separados
 app.include_router(model_router)

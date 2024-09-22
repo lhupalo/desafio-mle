@@ -11,6 +11,14 @@ client = TestClient(app)
 
 @pytest.fixture
 def setup_in_memory_databases():
+    """
+    Configura o banco de dados de predições e o gerenciador de modelos antes de executar os testes.
+
+    A fixture limpa a base de dados de predições para garantir um ambiente limpo para cada teste.
+    Além disso, descarrega o modelo no gerenciador de modelos para simular um estado onde
+    nenhum modelo foi carregado. Após a execução do teste, o banco de dados é limpo novamente.
+    """
+
     # Configuração para limpar o banco de dados de predições
     db = PredictionInMemoryDatabase()
     db.predictions.delete_many({})  # Limpar antes dos testes
@@ -24,8 +32,25 @@ def setup_in_memory_databases():
 
 
 def test_predict_without_loading_model(setup_in_memory_databases):
+    """
+    Testa o comportamento do endpoint /model/predict/ quando o modelo não foi carregado.
+
+    Cenário:
+    - Um conjunto de dados de voo válido é enviado para o endpoint de previsão.
+    - Nenhum modelo foi carregado antes de fazer a requisição.
+
+    Expectativa:
+    - O servidor deve retornar um erro 400 com a mensagem "O modelo não foi carregado."
+
+    Args:
+        setup_in_memory_databases (fixture): Prepara o ambiente de teste, limpando o banco de dados de predições e descarregando o modelo.
+
+    Raises:
+        AssertionError: Se o status da resposta não for 400 ou a mensagem de erro esperada não for retornada.
+    """
+
     flight_data = {
-        "dep_time": 1345,
+        "dep_time": "1345",
         "dep_delay": 10.5,
         "origin": "JFK",
         "dest": "LAX",
@@ -50,7 +75,7 @@ def test_load_and_predict_integration(setup_in_memory_databases):
 
     # Fazer uma predição
     flight_data = {
-        "dep_time": 1345,
+        "dep_time": "1342",
         "dep_delay": 10.5,
         "origin": "JFK",
         "dest": "LAX",
@@ -69,6 +94,29 @@ def test_load_and_predict_integration(setup_in_memory_databases):
 
 
 def test_prediction_history_integration(setup_in_memory_databases):
+    """
+    Teste de integração que valida o carregamento de um modelo e a realização de uma previsão.
+
+    Este teste cobre o fluxo completo de carregar um modelo de previsão, realizar uma previsão com
+    dados de voo válidos e verificar se a previsão foi salva corretamente na base de dados.
+
+    Passos do teste:
+    1. Carregar um arquivo de modelo válido no endpoint `/model/load/`.
+    2. Enviar dados de voo para o endpoint `/model/predict/` e garantir que a previsão seja realizada.
+    3. Verificar se a predição foi armazenada corretamente no banco de dados de previsões.
+
+    Args:
+        setup_in_memory_databases (fixture): Configura o banco de dados e descarrega o modelo antes do teste.
+
+    Asserts:
+        - Verifica se o carregamento do modelo retorna o status 200.
+        - Verifica se a previsão retorna o status 200 e contém o campo "predicted_arrival_delay".
+        - Verifica se a predição foi salva corretamente na base de dados.
+
+    Raises:
+        AssertionError: Se alguma das verificações falhar, indicando problemas no fluxo de integração.
+    """
+
     # Carregar um modelo válido
     MODEL_FILE_PATH = "./notebook/modelo_linearReg.pkl"
     with open(MODEL_FILE_PATH, "rb") as f:
@@ -79,7 +127,7 @@ def test_prediction_history_integration(setup_in_memory_databases):
 
     # Fazer uma predição
     flight_data = {
-        "dep_time": 1345,
+        "dep_time": "1345".lstrip("0"),
         "dep_delay": 10.5,
         "origin": "JFK",
         "dest": "LAX",

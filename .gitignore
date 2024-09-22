@@ -6,3 +6,6 @@ htmlcov/
 .flake8
 
 notebook/ml-env
+
+*.pyc
+__pycache__/

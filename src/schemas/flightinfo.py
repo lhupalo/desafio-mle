@@ -3,7 +3,7 @@ from pydantic.functional_validators import field_validator
 
 
 class FlightInfo(BaseModel):
-    dep_time: int  # Horário de partida, por exemplo, em formato 24 horas (HHMM)
+    dep_time: str  # Horário de partida, por exemplo, em formato 24 horas (HHMM)
     dep_delay: float  # Atraso na partida (em minutos), opcional
     origin: str  # Aeroporto de origem (código IATA)
     dest: str  # Aeroporto de destino (código IATA)
@@ -13,6 +13,7 @@ class FlightInfo(BaseModel):
 
     @field_validator("dep_time")
     def dep_time_must_be_valid(cls, value):
+        value = int(value.lstrip("0"))
         if value < 0:
             raise ValueError("Departure time must be positive")
         return value
@@ -32,7 +33,7 @@ class FlightInfo(BaseModel):
     class ConfigDict:
         schema_extra = {
             "example": {
-                "dep_time": 1345,
+                "dep_time": "0345",
                 "dep_delay": 10.5,
                 "origin": "JFK",
                 "dest": "LAX",
